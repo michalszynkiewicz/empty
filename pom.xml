@@ -6,7 +6,7 @@
 
     <groupId>com.github.michalszynkiewicz.test</groupId>
     <artifactId>empty</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.11</version>
 
 
     <build>
