@@ -1,0 +1,109 @@
+name: Quarkus CI
+
+on:
+  push:
+    branches-ignore:
+      - 'dependabot/**'
+    # paths-ignore in ci-fork-mvn-cache.yml should match
+    paths-ignore:
+      - '.gitignore'
+      - '.dockerignore'
+      - '*.md'
+      - '*.adoc'
+      - '*.txt'
+      - 'adr/**'
+      - 'docs/src/main/asciidoc/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/*.yml'
+      - '.github/*.java'
+      - '.github/*.conf'
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths-ignore:
+      - '.gitignore'
+      - '.dockerignore'
+      - '*.md'
+      - '*.adoc'
+      - '*.txt'
+      - 'adr/**'
+      - 'docs/src/main/asciidoc/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/*.yml'
+      - '.github/*.java'
+      - '.github/*.conf'
+  workflow_dispatch:
+
+env:
+  # Workaround testsuite locale issue
+  LANG: en_US.UTF-8
+  COMMON_MAVEN_ARGS: "-e -B --fail-at-end"
+  NATIVE_TEST_MAVEN_ARGS: "install"
+  JVM_TEST_MAVEN_ARGS: ""
+jobs:
+  # This is a hack to work around a GitHub API limitation:
+  # when the PR is coming from another fork, the pull_requests field of the
+  # workflow_run payload is empty.
+  # For more details, see
+  # https://github.community/t/pull-request-attribute-empty-in-workflow-run-event-object-for-pr-from-forked-repo/154682
+  attach-pr-number:
+    runs-on: ubuntu-latest
+    name: Attach pull request number
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Create file
+        shell: bash
+        run: |
+          echo -n ${{ github.event.number }} > pull-request-number
+      - name: Upload pull request number
+        uses: actions/upload-artifact@v2
+        with:
+          name: pull-request-number-${{ github.event.number }}
+          path: pull-request-number
+  build-jdk11:
+    name: "Initial JDK 11 Build"
+    runs-on: ubuntu-latest
+    # Skip main in forks
+    # Skip draft PRs and those with WIP in the subject, rerun as soon as its removed
+    outputs:
+      gib_args: ${{ steps.get-gib-args.outputs.gib_args }}
+      gib_impacted: ${{ steps.get-gib-impacted.outputs.impacted_modules }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Set up JDK 11
+        uses: actions/setup-java@v2
+        with:
+          distribution: temurin
+          java-version: 11
+      - name: Build
+        shell: bash
+        # Despite the pre-calculated run_jvm flag, GIB has to be re-run here to figure out the exact submodules to build.
+        run: ./mvnw $COMMON_MAVEN_ARGS install
+      - name: Prepare failure archive (if maven failed)
+        if: failure()
+        shell: bash
+        run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
+      - name: Upload failure Archive (if maven failed)
+        uses: actions/upload-artifact@v1
+        if: failure()
+        with:
+          name: test-reports-jvm11
+          path: 'test-reports.tgz'
+      - name: Prepare all test reports archive
+        shell: bash
+        run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf all-test-reports.tgz -T -
+      - name: Upload all test reports archive
+        uses: actions/upload-artifact@v1
+        with:
+          name: all-test-reports-jvm11
+          path: 'all-test-reports.tgz'
+      - name: Upload build reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: ${{ failure() || cancelled() }}
+        with:
+          name: "build-reports-JVM Tests - JDK 11"
+          path: |
+            **/target/*-reports/TEST-*.xml
+            target/build-report.json
+          retention-days: 2
