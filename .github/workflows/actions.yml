@@ -45,20 +45,6 @@ jobs:
   # workflow_run payload is empty.
   # For more details, see
   # https://github.community/t/pull-request-attribute-empty-in-workflow-run-event-object-for-pr-from-forked-repo/154682
-  attach-pr-number:
-    runs-on: ubuntu-latest
-    name: Attach pull request number
-    if: github.event_name == 'pull_request'
-    steps:
-      - name: Create file
-        shell: bash
-        run: |
-          echo -n ${{ github.event.number }} > pull-request-number
-      - name: Upload pull request number
-        uses: actions/upload-artifact@v2
-        with:
-          name: pull-request-number-${{ github.event.number }}
-          path: pull-request-number
   build-jdk11:
     name: "Initial JDK 11 Build"
     runs-on: ubuntu-latest
