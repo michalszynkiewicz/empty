@@ -4,4 +4,7 @@
  * Time: 3:18 PM
  */
 public class EmptyClass {
+    public EmptyClass() {
+
+    }
 }
