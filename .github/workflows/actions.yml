@@ -46,7 +46,7 @@ jobs:
   # For more details, see
   # https://github.community/t/pull-request-attribute-empty-in-workflow-run-event-object-for-pr-from-forked-repo/154682
   build-jdk11:
-    name: "Initial JDK 11 Build"
+    name: "JVM Tests - JDK 11"
     runs-on: ubuntu-latest
     # Skip main in forks
     # Skip draft PRs and those with WIP in the subject, rerun as soon as its removed
