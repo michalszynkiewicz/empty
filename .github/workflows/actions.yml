@@ -70,23 +70,8 @@ jobs:
         if: failure()
         shell: bash
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
-      - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v1
-        if: failure()
-        with:
-          name: test-reports-jvm11
-          path: 'test-reports.tgz'
-      - name: Prepare all test reports archive
-        shell: bash
-        run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf all-test-reports.tgz -T -
-      - name: Upload all test reports archive
-        uses: actions/upload-artifact@v1
-        with:
-          name: all-test-reports-jvm11
-          path: 'all-test-reports.tgz'
       - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v2
-        if: ${{ failure() || cancelled() }}
         with:
           name: "build-reports-JVM Tests - JDK 11"
           path: |
